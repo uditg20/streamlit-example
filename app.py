@@ -1,138 +1,167 @@
 #!/usr/bin/env python3
 from flask import Flask, render_template_string, request, jsonify
 import json
-import os
 
 app = Flask(__name__)
 
-# Demo data
-DEMO_DATA = {
-    "blue jeans": {
-        "description": "Classic blue denim jeans - the ultimate wardrobe staple that pairs with virtually anything.",
-        "colors": ["White", "Navy", "Tan", "Burgundy", "Forest Green", "Gray"],
-        "outfits": [
-            {
-                "name": "Casual Cool",
-                "desc": "Effortlessly stylish for everyday wear",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "White Crew Neck T-Shirt", "detail": "100% cotton, relaxed fit", "why": "Clean contrast with blue denim"},
-                    {"cat": "Shoes", "icon": "👟", "name": "White Leather Sneakers", "detail": "Minimalist design", "why": "Keeps it casual yet polished"},
-                    {"cat": "Layer", "icon": "🧥", "name": "Denim Jacket (Light Wash)", "detail": "Contrasting shade", "why": "Canadian tuxedo done right"},
-                    {"cat": "Accessory", "icon": "👜", "name": "Brown Leather Belt", "detail": "Silver buckle", "why": "Adds sophistication"}
-                ],
-                "tip": "Cuff your jeans to show off sneakers. Tuck in the front of your tee."
-            },
-            {
-                "name": "Smart Casual",
-                "desc": "Elevated look for dinner or casual office",
-                "items": [
-                    {"cat": "Top", "icon": "👔", "name": "Light Blue Oxford Shirt", "detail": "Button-down, slim fit", "why": "Blue-on-blue tonal sophistication"},
-                    {"cat": "Shoes", "icon": "👞", "name": "Tan Suede Loafers", "detail": "Penny loafer style", "why": "Elevates while staying comfortable"},
-                    {"cat": "Layer", "icon": "🧥", "name": "Navy Blazer", "detail": "Unstructured cotton blend", "why": "Instantly elevates any jeans"},
-                    {"cat": "Accessory", "icon": "⌚", "name": "Leather Watch", "detail": "Brown strap, classic dial", "why": "Refined attention to detail"}
-                ],
-                "tip": "Roll up sleeves for a relaxed vibe. Stick to dark wash jeans."
-            },
-            {
-                "name": "Weekend Explorer",
-                "desc": "Rugged yet stylish for outdoor adventures",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "Flannel Shirt", "detail": "Red & black buffalo check", "why": "Texture and warmth with visual interest"},
-                    {"cat": "Shoes", "icon": "🥾", "name": "Brown Leather Boots", "detail": "Lace-up work boot style", "why": "Rugged durability"},
-                    {"cat": "Layer", "icon": "🧥", "name": "Quilted Vest", "detail": "Navy or olive", "why": "Warmth without bulk"},
-                    {"cat": "Accessory", "icon": "🎒", "name": "Canvas Backpack", "detail": "Waxed canvas, olive", "why": "Functional and stylish"}
-                ],
-                "tip": "Leave flannel unbuttoned with a plain tee underneath. Cuff jeans to show boots."
-            }
-        ],
-        "avoid": ["Matching blue denim top", "Overly distressed for formal settings", "Baggy fits", "Clashing bold patterns"],
-        "celeb": "Ryan Gosling - effortless denim style master",
-        "protip": "Invest in quality denim that fits perfectly. The right jeans should hug without restricting."
-    },
-    "white sneakers": {
-        "description": "Crisp white sneakers - versatile footwear that adds a fresh, modern touch to any outfit.",
-        "colors": ["Black", "Navy", "Gray", "Beige", "Light Blue", "Olive"],
-        "outfits": [
-            {
-                "name": "Athleisure Chic",
-                "desc": "Perfect blend of comfort and style",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "Oversized Gray Hoodie", "detail": "Premium cotton blend", "why": "Cozy, effortless vibe"},
-                    {"cat": "Bottom", "icon": "👖", "name": "Black Joggers", "detail": "Tapered fit, ribbed cuffs", "why": "Sleek yet comfortable"},
-                    {"cat": "Layer", "icon": "🧥", "name": "Black Bomber Jacket", "detail": "Lightweight nylon", "why": "Elevates the sporty aesthetic"},
-                    {"cat": "Accessory", "icon": "🧢", "name": "Black Baseball Cap", "detail": "Minimalist design", "why": "Ties the sporty look together"}
-                ],
-                "tip": "Keep sneakers pristine. Black + white contrast creates striking visual."
-            },
-            {
-                "name": "Summer Fresh",
-                "desc": "Light, breezy look for warm weather",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "Linen Camp Collar Shirt", "detail": "Light blue, short sleeve", "why": "Breathable summer style"},
-                    {"cat": "Bottom", "icon": "🩳", "name": "Khaki Chino Shorts", "detail": "7-inch inseam, slim fit", "why": "Shows off sneakers beautifully"},
-                    {"cat": "Accessory", "icon": "🕶️", "name": "Wayfarer Sunglasses", "detail": "Tortoise shell", "why": "Essential summer accessory"},
-                    {"cat": "Accessory", "icon": "👜", "name": "Woven Leather Belt", "detail": "Braided brown leather", "why": "Adds texture and sophistication"}
-                ],
-                "tip": "Go sockless or wear no-show socks. Try a simple front tuck."
-            },
-            {
-                "name": "Minimalist Monday",
-                "desc": "Clean lines and neutral tones",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "Black Fitted T-Shirt", "detail": "Premium cotton, crew neck", "why": "Bold black-white contrast"},
-                    {"cat": "Bottom", "icon": "👖", "name": "Dark Wash Slim Jeans", "detail": "No distressing", "why": "Grounds the outfit"},
-                    {"cat": "Layer", "icon": "🧥", "name": "Camel Overcoat", "detail": "Wool blend", "why": "Bridges black and white beautifully"},
-                    {"cat": "Accessory", "icon": "⌚", "name": "Minimalist Watch", "detail": "White dial, black strap", "why": "Echoes the black-white theme"}
-                ],
-                "tip": "Less is more. Let quality pieces speak for themselves."
-            }
-        ],
-        "avoid": ["Overly busy patterns", "Dirty/worn sneakers", "Too many bright colors", "Formal shoes vibes"],
-        "celeb": "Zendaya - makes white sneakers work with everything",
-        "protip": "Get a sneaker cleaning kit. Keep a 'going out' pair and an 'everyday' pair."
-    },
-    "leather jacket": {
-        "description": "The iconic leather jacket - a timeless statement piece that instantly adds edge and sophistication.",
-        "colors": ["Black", "White", "Burgundy", "Charcoal", "Tan", "Dark Green"],
-        "outfits": [
-            {
-                "name": "Rock & Roll Rebel",
-                "desc": "Channel your inner rockstar",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "Vintage Band T-Shirt", "detail": "Slightly worn-in", "why": "Authentic rock vibes"},
-                    {"cat": "Bottom", "icon": "👖", "name": "Black Skinny Jeans", "detail": "Slight distressing", "why": "Sleek silhouette with edge"},
-                    {"cat": "Shoes", "icon": "👢", "name": "Black Chelsea Boots", "detail": "Pointed toe, stacked heel", "why": "Perfect rocker footwear"},
-                    {"cat": "Accessory", "icon": "📿", "name": "Silver Chain Necklace", "detail": "Medium weight", "why": "Right amount of metal"}
-                ],
-                "tip": "Leave jacket unzipped. Push up sleeves for added cool factor."
-            },
-            {
-                "name": "Date Night Edge",
-                "desc": "Sophisticated with a hint of danger",
-                "items": [
-                    {"cat": "Top", "icon": "👚", "name": "Black Silk Camisole", "detail": "V-neck, delicate straps", "why": "Feminine balance to masculine leather"},
-                    {"cat": "Bottom", "icon": "👖", "name": "High-Waisted Trousers", "detail": "Wide leg, black crepe", "why": "Elevates while staying sleek"},
-                    {"cat": "Shoes", "icon": "👠", "name": "Strappy Heeled Sandals", "detail": "Black leather, 3-inch", "why": "Adds elegance in the leather family"},
-                    {"cat": "Accessory", "icon": "💍", "name": "Gold Hoop Earrings", "detail": "Medium, polished", "why": "Warm gold softens all-black"}
-                ],
-                "tip": "Bold red lip adds a pop of color. Keep makeup minimal otherwise."
-            },
-            {
-                "name": "Casual Sunday",
-                "desc": "Relaxed yet put-together",
-                "items": [
-                    {"cat": "Top", "icon": "👕", "name": "White Henley Shirt", "detail": "Long sleeve, waffle knit", "why": "Textured white contrasts dark leather"},
-                    {"cat": "Bottom", "icon": "👖", "name": "Medium Wash Straight Jeans", "detail": "Classic fit", "why": "Casual, lets jacket be the star"},
-                    {"cat": "Shoes", "icon": "👟", "name": "White Leather Sneakers", "detail": "Clean, minimalist", "why": "Grounds in casual territory"},
-                    {"cat": "Accessory", "icon": "👜", "name": "Tan Crossbody Bag", "detail": "Simple leather", "why": "Warm tone breaks cool palette"}
-                ],
-                "tip": "Cuff jeans once to show sneakers. Add a beanie in cooler weather."
-            }
-        ],
-        "avoid": ["Too many leather pieces", "Overly formal items", "Bright neon colors", "Baggy silhouettes"],
-        "celeb": "Hailey Bieber - effortless leather jacket styling",
-        "protip": "Condition leather regularly. A well-maintained jacket develops beautiful patina over time."
-    }
+# Product data with images
+PRODUCTS = {
+    "blue jeans": [
+        {"id": 1, "name": "Classic Slim Fit Blue Jeans", "price": "$79", "img": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop"},
+        {"id": 2, "name": "High-Waisted Straight Leg", "price": "$89", "img": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&h=500&fit=crop"},
+        {"id": 3, "name": "Relaxed Fit Boyfriend Jeans", "price": "$69", "img": "https://images.unsplash.com/photo-1475178626620-a4d074967452?w=400&h=500&fit=crop"},
+        {"id": 4, "name": "Skinny Stretch Denim", "price": "$65", "img": "https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=400&h=500&fit=crop"},
+    ],
+    "white sneakers": [
+        {"id": 5, "name": "Classic White Leather Sneakers", "price": "$120", "img": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop"},
+        {"id": 6, "name": "Minimalist Canvas Sneakers", "price": "$75", "img": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=400&h=500&fit=crop"},
+        {"id": 7, "name": "Platform White Sneakers", "price": "$95", "img": "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=400&h=500&fit=crop"},
+        {"id": 8, "name": "Retro White Trainers", "price": "$110", "img": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&h=500&fit=crop"},
+    ],
+    "leather jacket": [
+        {"id": 9, "name": "Classic Black Biker Jacket", "price": "$299", "img": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=500&fit=crop"},
+        {"id": 10, "name": "Vintage Brown Leather", "price": "$350", "img": "https://images.unsplash.com/photo-1520975954732-35dd22299614?w=400&h=500&fit=crop"},
+        {"id": 11, "name": "Moto Style Jacket", "price": "$275", "img": "https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=400&h=500&fit=crop"},
+        {"id": 12, "name": "Cropped Leather Jacket", "price": "$245", "img": "https://images.unsplash.com/photo-1559551409-dadc959f76b8?w=400&h=500&fit=crop"},
+    ],
+    "black dress": [
+        {"id": 13, "name": "Little Black Dress", "price": "$149", "img": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=500&fit=crop"},
+        {"id": 14, "name": "Black Midi Dress", "price": "$129", "img": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&h=500&fit=crop"},
+        {"id": 15, "name": "Black Maxi Dress", "price": "$159", "img": "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&h=500&fit=crop"},
+        {"id": 16, "name": "Black Cocktail Dress", "price": "$189", "img": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400&h=500&fit=crop"},
+    ],
+}
+
+# Outfit ideas with images
+OUTFIT_IDEAS = {
+    "blue jeans": [
+        {
+            "name": "Casual Weekend",
+            "img": "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "White T-Shirt", "img": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=250&fit=crop"},
+                {"name": "Blue Jeans", "img": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop"},
+                {"name": "Denim Jacket", "img": "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Smart Casual",
+            "img": "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Oxford Shirt", "img": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&h=250&fit=crop"},
+                {"name": "Dark Jeans", "img": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=200&h=250&fit=crop"},
+                {"name": "Loafers", "img": "https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=200&h=250&fit=crop"},
+                {"name": "Navy Blazer", "img": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Street Style",
+            "img": "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Graphic Tee", "img": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=200&h=250&fit=crop"},
+                {"name": "Ripped Jeans", "img": "https://images.unsplash.com/photo-1475178626620-a4d074967452?w=200&h=250&fit=crop"},
+                {"name": "High-Top Sneakers", "img": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=200&h=250&fit=crop"},
+                {"name": "Bomber Jacket", "img": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=200&h=250&fit=crop"},
+            ]
+        },
+    ],
+    "white sneakers": [
+        {
+            "name": "Athleisure Chic",
+            "img": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Gray Hoodie", "img": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200&h=250&fit=crop"},
+                {"name": "Black Joggers", "img": "https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop"},
+                {"name": "Baseball Cap", "img": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Summer Vibes",
+            "img": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Linen Shirt", "img": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=200&h=250&fit=crop"},
+                {"name": "Chino Shorts", "img": "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=200&h=250&fit=crop"},
+                {"name": "Sunglasses", "img": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Minimalist Look",
+            "img": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Black Turtleneck", "img": "https://images.unsplash.com/photo-1608234808654-2a8875faa7fd?w=200&h=250&fit=crop"},
+                {"name": "Tailored Trousers", "img": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=200&h=250&fit=crop"},
+                {"name": "Camel Coat", "img": "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=200&h=250&fit=crop"},
+            ]
+        },
+    ],
+    "leather jacket": [
+        {
+            "name": "Rock & Roll",
+            "img": "https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Band T-Shirt", "img": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=200&h=250&fit=crop"},
+                {"name": "Black Skinny Jeans", "img": "https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=200&h=250&fit=crop"},
+                {"name": "Chelsea Boots", "img": "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=200&h=250&fit=crop"},
+                {"name": "Leather Jacket", "img": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Date Night",
+            "img": "https://images.unsplash.com/photo-1485968579169-a6e9a7d39c80?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Silk Camisole", "img": "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=200&h=250&fit=crop"},
+                {"name": "Black Trousers", "img": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop"},
+                {"name": "Heeled Boots", "img": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&h=250&fit=crop"},
+                {"name": "Leather Jacket", "img": "https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Casual Cool",
+            "img": "https://images.unsplash.com/photo-1544441893-675973e31985?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "White Henley", "img": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=250&fit=crop"},
+                {"name": "Blue Jeans", "img": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop"},
+                {"name": "Brown Leather Jacket", "img": "https://images.unsplash.com/photo-1520975954732-35dd22299614?w=200&h=250&fit=crop"},
+            ]
+        },
+    ],
+    "black dress": [
+        {
+            "name": "Elegant Evening",
+            "img": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Black Dress", "img": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200&h=250&fit=crop"},
+                {"name": "Strappy Heels", "img": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&h=250&fit=crop"},
+                {"name": "Gold Clutch", "img": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&h=250&fit=crop"},
+                {"name": "Statement Earrings", "img": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Casual Day",
+            "img": "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Black Midi Dress", "img": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=200&h=250&fit=crop"},
+                {"name": "White Sneakers", "img": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=200&h=250&fit=crop"},
+                {"name": "Denim Jacket", "img": "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200&h=250&fit=crop"},
+                {"name": "Crossbody Bag", "img": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=200&h=250&fit=crop"},
+            ]
+        },
+        {
+            "name": "Office Chic",
+            "img": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=600&h=800&fit=crop",
+            "items": [
+                {"name": "Black Sheath Dress", "img": "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=200&h=250&fit=crop"},
+                {"name": "Nude Pumps", "img": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&h=250&fit=crop"},
+                {"name": "Structured Blazer", "img": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop"},
+                {"name": "Leather Tote", "img": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&h=250&fit=crop"},
+            ]
+        },
+    ],
 }
 
 HTML_TEMPLATE = '''
@@ -153,12 +182,12 @@ HTML_TEMPLATE = '''
             color: white;
         }
         
-        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
         
         /* Header */
         .header {
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 2rem;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
             border-radius: 24px;
             margin-bottom: 2rem;
@@ -167,56 +196,40 @@ HTML_TEMPLATE = '''
         
         .header h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 3rem;
+            font-size: 2.5rem;
             background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #f472b6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
         }
         
-        .header p { color: rgba(255,255,255,0.7); font-size: 1.1rem; }
+        .header p { color: rgba(255,255,255,0.7); margin-top: 0.5rem; }
         
         /* Search */
         .search-box {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
             margin-bottom: 2rem;
-            text-align: center;
-        }
-        
-        .search-box label {
-            display: block;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-            color: rgba(255,255,255,0.9);
         }
         
         .search-input {
-            width: 100%;
-            max-width: 500px;
+            width: 400px;
             padding: 1rem 1.5rem;
-            font-size: 1.1rem;
+            font-size: 1rem;
             border: 2px solid rgba(255,255,255,0.2);
             border-radius: 50px;
             background: rgba(255,255,255,0.05);
             color: white;
             outline: none;
-            transition: all 0.3s;
         }
         
-        .search-input:focus {
-            border-color: #a78bfa;
-            box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
-        }
-        
+        .search-input:focus { border-color: #a78bfa; }
         .search-input::placeholder { color: rgba(255,255,255,0.4); }
         
         .search-btn {
-            margin-top: 1rem;
-            padding: 1rem 3rem;
-            font-size: 1.1rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
             font-weight: 600;
             border: none;
             border-radius: 50px;
@@ -224,24 +237,21 @@ HTML_TEMPLATE = '''
             color: white;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
         }
         
-        .search-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
-        }
+        .search-btn:hover { transform: translateY(-2px); }
         
         /* Quick picks */
         .quick-picks {
-            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
         }
-        
-        .quick-picks span { color: rgba(255,255,255,0.5); margin-right: 0.5rem; }
         
         .quick-btn {
             padding: 0.5rem 1rem;
-            margin: 0.25rem;
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 20px;
             background: rgba(255,255,255,0.05);
@@ -250,210 +260,128 @@ HTML_TEMPLATE = '''
             transition: all 0.2s;
         }
         
-        .quick-btn:hover {
-            background: rgba(167, 139, 250, 0.2);
-            border-color: rgba(167, 139, 250, 0.4);
-        }
+        .quick-btn:hover { background: rgba(167, 139, 250, 0.2); border-color: #a78bfa; }
         
-        /* Results */
-        .results { display: none; }
-        .results.active { display: block; }
-        
-        .results-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f472b6 100%);
-            padding: 2rem;
-            border-radius: 20px;
-            margin-bottom: 2rem;
-        }
-        
-        .results-header h2 {
+        /* Section Title */
+        .section-title {
             font-family: 'Playfair Display', serif;
-            font-size: 2rem;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
-        .results-header p {
-            margin-top: 0.5rem;
-            opacity: 0.9;
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
         }
         
-        /* Colors */
-        .colors-section {
-            background: rgba(255,255,255,0.03);
+        .product-card {
+            background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
         }
         
-        .section-label {
-            font-size: 0.75rem;
+        .product-card:hover {
+            transform: translateY(-5px);
+            border-color: #a78bfa;
+            box-shadow: 0 10px 40px rgba(167, 139, 250, 0.2);
+        }
+        
+        .product-img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 1rem;
+        }
+        
+        .product-name {
             font-weight: 600;
-            color: rgba(255,255,255,0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
         
-        .color-chip {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 25px;
-            margin: 0.25rem;
-            font-size: 0.9rem;
+        .product-price {
+            color: #a78bfa;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
         
-        /* Outfit Cards */
+        /* Outfit Ideas Grid */
+        .outfits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+        
         .outfit-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            overflow: hidden;
             transition: all 0.3s;
         }
         
         .outfit-card:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(167, 139, 250, 0.3);
+            transform: translateY(-5px);
+            border-color: #f472b6;
+            box-shadow: 0 10px 40px rgba(244, 114, 182, 0.2);
         }
         
-        .outfit-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
+        .outfit-main-img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
         }
         
-        .outfit-title {
+        .outfit-info {
+            padding: 1.5rem;
+        }
+        
+        .outfit-name {
             font-family: 'Playfair Display', serif;
             font-size: 1.4rem;
-            color: #a78bfa;
-        }
-        
-        .outfit-desc {
-            color: rgba(255,255,255,0.6);
-            margin-top: 0.25rem;
-            font-size: 0.95rem;
-        }
-        
-        .toggle-icon {
-            font-size: 1.5rem;
-            transition: transform 0.3s;
-        }
-        
-        .outfit-card.open .toggle-icon { transform: rotate(180deg); }
-        
-        .outfit-content {
-            display: none;
-            margin-top: 1.5rem;
-        }
-        
-        .outfit-card.open .outfit-content { display: block; }
-        
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
+            color: #f472b6;
             margin-bottom: 1rem;
         }
         
-        .item-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 1.2rem;
+        .outfit-items {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .outfit-item {
+            text-align: center;
+        }
+        
+        .outfit-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid transparent;
             transition: all 0.2s;
         }
         
-        .item-card:hover {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(244, 114, 182, 0.3);
+        .outfit-item img:hover {
+            border-color: #a78bfa;
         }
         
-        .item-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        
-        .item-cat {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 12px;
+        .outfit-item span {
+            display: block;
             font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-        
-        .item-name {
-            font-weight: 600;
-            margin-bottom: 0.3rem;
-        }
-        
-        .item-detail {
-            font-size: 0.85rem;
             color: rgba(255,255,255,0.6);
-            margin-bottom: 0.5rem;
-        }
-        
-        .item-why {
-            font-size: 0.8rem;
-            color: #a78bfa;
-            font-style: italic;
-        }
-        
-        .styling-tip {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
-            border: 1px solid rgba(251, 191, 36, 0.2);
-            border-radius: 12px;
-            padding: 1rem;
-        }
-        
-        .styling-tip strong { color: #fbbf24; }
-        
-        /* Bottom sections */
-        .bottom-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .avoid-section {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-        
-        .avoid-section ul { list-style: none; }
-        .avoid-section li { padding: 0.3rem 0; }
-        .avoid-section li::before { content: "✕ "; color: #ef4444; }
-        
-        .celeb-section {
-            background: linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(244, 114, 182, 0.1) 100%);
-            border: 1px solid rgba(167, 139, 250, 0.2);
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-        
-        .pro-tip {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
-        
-        .pro-tip strong { color: #10b981; }
-        
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            margin-top: 3rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.4);
+            margin-top: 0.3rem;
         }
         
         /* Loading */
@@ -476,32 +404,51 @@ HTML_TEMPLATE = '''
         }
         
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Results container */
+        .results { display: none; }
+        .results.active { display: block; }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.4);
+        }
+        
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            margin: 2rem 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>👗 AI Outfit Stylist</h1>
-            <p>Your personal AI-powered fashion advisor ✨</p>
+            <p>Search for any clothing item and get outfit inspiration with pictures</p>
         </div>
         
         <div class="search-box">
-            <label>🔍 What clothing item are you looking for?</label>
-            <input type="text" class="search-input" id="searchInput" placeholder="e.g., blue jeans, white sneakers, leather jacket...">
-            <br>
-            <button class="search-btn" onclick="search()">✨ Get Outfit Ideas</button>
-            
-            <div class="quick-picks">
-                <span>Try:</span>
-                <button class="quick-btn" onclick="quickSearch('blue jeans')">Blue Jeans</button>
-                <button class="quick-btn" onclick="quickSearch('white sneakers')">White Sneakers</button>
-                <button class="quick-btn" onclick="quickSearch('leather jacket')">Leather Jacket</button>
-            </div>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search for clothing items...">
+            <button class="search-btn" onclick="search()">🔍 Search</button>
+        </div>
+        
+        <div class="quick-picks">
+            <span style="color: rgba(255,255,255,0.5);">Popular:</span>
+            <button class="quick-btn" onclick="quickSearch('blue jeans')">👖 Blue Jeans</button>
+            <button class="quick-btn" onclick="quickSearch('white sneakers')">👟 White Sneakers</button>
+            <button class="quick-btn" onclick="quickSearch('leather jacket')">🧥 Leather Jacket</button>
+            <button class="quick-btn" onclick="quickSearch('black dress')">👗 Black Dress</button>
         </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>✨ Our AI stylist is curating the perfect outfits for you...</p>
+            <p>Finding products and outfit ideas...</p>
         </div>
         
         <div class="results" id="results"></div>
@@ -520,7 +467,7 @@ HTML_TEMPLATE = '''
         function search() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
-                alert('Please enter a clothing item!');
+                alert('Please enter a search term!');
                 return;
             }
             
@@ -546,66 +493,44 @@ HTML_TEMPLATE = '''
         function displayResults(query, data) {
             const resultsDiv = document.getElementById('results');
             
-            let colorsHtml = data.colors.map(c => `<span class="color-chip">${c}</span>`).join('');
-            
-            let outfitsHtml = data.outfits.map((outfit, i) => `
-                <div class="outfit-card ${i === 0 ? 'open' : ''}" onclick="this.classList.toggle('open')">
-                    <div class="outfit-header">
-                        <div>
-                            <div class="outfit-title">✨ ${outfit.name}</div>
-                            <div class="outfit-desc">${outfit.desc}</div>
-                        </div>
-                        <span class="toggle-icon">▼</span>
+            // Products HTML
+            let productsHtml = data.products.map(p => `
+                <div class="product-card">
+                    <img src="${p.img}" alt="${p.name}" class="product-img" loading="lazy">
+                    <div class="product-info">
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-price">${p.price}</div>
                     </div>
-                    <div class="outfit-content">
-                        <div class="items-grid">
-                            ${outfit.items.map(item => `
-                                <div class="item-card">
-                                    <div class="item-icon">${item.icon}</div>
-                                    <span class="item-cat">${item.cat}</span>
-                                    <div class="item-name">${item.name}</div>
-                                    <div class="item-detail">${item.detail}</div>
-                                    <div class="item-why">💡 ${item.why}</div>
+                </div>
+            `).join('');
+            
+            // Outfits HTML
+            let outfitsHtml = data.outfits.map(o => `
+                <div class="outfit-card">
+                    <img src="${o.img}" alt="${o.name}" class="outfit-main-img" loading="lazy">
+                    <div class="outfit-info">
+                        <div class="outfit-name">✨ ${o.name}</div>
+                        <div class="outfit-items">
+                            ${o.items.map(item => `
+                                <div class="outfit-item">
+                                    <img src="${item.img}" alt="${item.name}" loading="lazy">
+                                    <span>${item.name}</span>
                                 </div>
                             `).join('')}
-                        </div>
-                        <div class="styling-tip">
-                            <strong>👠 Styling Tip:</strong> ${outfit.tip}
                         </div>
                     </div>
                 </div>
             `).join('');
             
-            let avoidHtml = data.avoid.map(a => `<li>${a}</li>`).join('');
-            
             resultsDiv.innerHTML = `
-                <div class="results-header">
-                    <h2>🛍️ ${query.charAt(0).toUpperCase() + query.slice(1)}</h2>
-                    <p>${data.description}</p>
-                </div>
+                <h2 class="section-title">🛍️ Search Results for "${query}"</h2>
+                <div class="products-grid">${productsHtml}</div>
                 
-                <div class="colors-section">
-                    <div class="section-label">🎨 Complementary Colors</div>
-                    ${colorsHtml}
-                </div>
+                <div class="divider"></div>
                 
-                <h3 style="margin-bottom: 1rem; font-family: 'Playfair Display', serif;">👔 Complete Outfit Ideas</h3>
-                ${outfitsHtml}
-                
-                <div class="bottom-grid">
-                    <div class="avoid-section">
-                        <div class="section-label">🚫 What to Avoid</div>
-                        <ul>${avoidHtml}</ul>
-                    </div>
-                    <div class="celeb-section">
-                        <div class="section-label">🌟 Style Inspiration</div>
-                        <p>${data.celeb}</p>
-                    </div>
-                </div>
-                
-                <div class="pro-tip">
-                    <strong>💎 Pro Stylist Tip:</strong> ${data.protip}
-                </div>
+                <h2 class="section-title">💡 Outfit Ideas</h2>
+                <p style="color: rgba(255,255,255,0.6); margin-bottom: 1.5rem;">Complete looks featuring ${query}</p>
+                <div class="outfits-grid">${outfitsHtml}</div>
             `;
             
             resultsDiv.classList.add('active');
@@ -630,25 +555,39 @@ def search():
     data = request.json
     query = data.get('query', '').lower().strip()
     
-    # Find matching data
-    result = None
-    for key in DEMO_DATA:
+    # Find matching products
+    products = []
+    outfits = []
+    
+    for key in PRODUCTS:
         if key in query or query in key:
-            result = DEMO_DATA[key]
+            products = PRODUCTS[key]
+            outfits = OUTFIT_IDEAS.get(key, [])
             break
     
     # Fallback matches
-    if not result:
-        if 'jean' in query or 'denim' in query:
-            result = DEMO_DATA['blue jeans']
-        elif 'sneaker' in query or 'trainer' in query or 'shoe' in query:
-            result = DEMO_DATA['white sneakers']
-        elif 'leather' in query or 'jacket' in query:
-            result = DEMO_DATA['leather jacket']
+    if not products:
+        if 'jean' in query or 'denim' in query or 'pant' in query:
+            products = PRODUCTS['blue jeans']
+            outfits = OUTFIT_IDEAS['blue jeans']
+        elif 'sneaker' in query or 'shoe' in query or 'trainer' in query:
+            products = PRODUCTS['white sneakers']
+            outfits = OUTFIT_IDEAS['white sneakers']
+        elif 'leather' in query or 'jacket' in query or 'coat' in query:
+            products = PRODUCTS['leather jacket']
+            outfits = OUTFIT_IDEAS['leather jacket']
+        elif 'dress' in query or 'gown' in query:
+            products = PRODUCTS['black dress']
+            outfits = OUTFIT_IDEAS['black dress']
         else:
-            result = DEMO_DATA['blue jeans']  # Default
+            # Default to jeans
+            products = PRODUCTS['blue jeans']
+            outfits = OUTFIT_IDEAS['blue jeans']
     
-    return jsonify(result)
+    return jsonify({
+        "products": products,
+        "outfits": outfits
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
