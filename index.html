@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Outfit Stylist - Personalized Fashion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --secondary: #ec4899;
+            --bg-dark: #0f0a1a;
+            --bg-card: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.1);
+            --text: #ffffff;
+            --text-muted: rgba(255,255,255,0.6);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0a1a 0%, #1a1025 50%, #0f1419 100%);
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+        
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        
+        /* Steps indicator */
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .step.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+        }
+        
+        .step.completed {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        
+        .step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        /* Form sections */
+        .form-section {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        .form-section > p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        
+        /* Form grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+        
+        .form-group select option {
+            background: #1a1025;
+            color: white;
+        }
+        
+        /* Visual selectors */
+        .visual-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .visual-option {
+            padding: 1.5rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-card);
+        }
+        
+        .visual-option:hover {
+            border-color: var(--primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .visual-option.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+        }
+        
+        .visual-option .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .visual-option .label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        /* Complexion selector */
+        .complexion-grid {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        
+        .complexion-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .complexion-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .complexion-option.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+        }
+        
+        .complexion-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+        
+        /* Search input */
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1.25rem 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 1.1rem;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(139, 92, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+        
+        .results-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* Profile Summary */
+        .profile-summary {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .profile-summary .tag {
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .profile-summary .tag span {
+            color: var(--text-muted);
+        }
+        
+        /* Product Grid */
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.2);
+        }
+        
+        .product-card img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 1.25rem;
+        }
+        
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .product-reason {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: #10b981;
+        }
+        
+        .product-links {
+            margin-top: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .shop-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.35rem 0.75rem;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .shop-link:hover {
+            background: rgba(139, 92, 246, 0.4);
+            color: white;
+        }
+        
+        /* Outfit Cards */
+        .outfits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        
+        .outfit-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .outfit-card:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 10px 40px rgba(236, 72, 153, 0.2);
+        }
+        
+        .outfit-main-img {
+            width: 100%;
+            height: 450px;
+            object-fit: cover;
+        }
+        
+        .outfit-content {
+            padding: 1.5rem;
+        }
+        
+        .outfit-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .outfit-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .outfit-items {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .outfit-item {
+            text-align: center;
+        }
+        
+        .outfit-item img {
+            width: 100%;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .outfit-item img:hover {
+            border-color: var(--primary);
+        }
+        
+        .outfit-item span {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        
+        .outfit-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .outfit-tag {
+            padding: 0.25rem 0.75rem;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--primary);
+        }
+        
+        /* Style Tips */
+        .tips-section {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .tips-section h3 {
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+        
+        .tips-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .tip-item {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        
+        .tip-icon {
+            font-size: 1.2rem;
+        }
+        
+        .tip-text {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .tip-source {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+        
+        /* Expert Tips Banner */
+        .expert-banner {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .expert-banner h4 {
+            color: #fbbf24;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .expert-banner p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 4rem;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Budget Badge */
+        .budget-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 { font-size: 2rem; }
+            .form-section { padding: 1.5rem; }
+            .outfits-grid { grid-template-columns: 1fr; }
+            .outfit-items { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👗 AI Outfit Stylist</h1>
+            <p>Get personalized outfit recommendations from fashion experts, tailored to your profile and budget</p>
+        </header>
+        
+        <!-- Steps Indicator -->
+        <div class="steps">
+            <div class="step active" id="step1-indicator">
+                <span class="step-num">1</span>
+                <span>Your Profile</span>
+            </div>
+            <div class="step" id="step2-indicator">
+                <span class="step-num">2</span>
+                <span>Preferences</span>
+            </div>
+            <div class="step" id="step3-indicator">
+                <span class="step-num">3</span>
+                <span>Search Item</span>
+            </div>
+            <div class="step" id="step4-indicator">
+                <span class="step-num">4</span>
+                <span>Results</span>
+            </div>
+        </div>
+        
+        <!-- Step 1: Basic Profile -->
+        <section class="form-section active" id="step1">
+            <h2>👤 Tell Us About Yourself</h2>
+            <p>We'll use this to recommend styles that complement your features</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Gender</label>
+                    <div class="visual-select" id="gender-select">
+                        <div class="visual-option" data-value="male">
+                            <div class="icon">👨</div>
+                            <div class="label">Male</div>
+                        </div>
+                        <div class="visual-option" data-value="female">
+                            <div class="icon">👩</div>
+                            <div class="label">Female</div>
+                        </div>
+                        <div class="visual-option" data-value="non-binary">
+                            <div class="icon">🧑</div>
+                            <div class="label">Non-Binary</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Age Range</label>
+                    <div class="visual-select" id="age-select">
+                        <div class="visual-option" data-value="18-24">
+                            <div class="icon">🌱</div>
+                            <div class="label">18-24</div>
+                        </div>
+                        <div class="visual-option" data-value="25-34">
+                            <div class="icon">🌿</div>
+                            <div class="label">25-34</div>
+                        </div>
+                        <div class="visual-option" data-value="35-44">
+                            <div class="icon">🌳</div>
+                            <div class="label">35-44</div>
+                        </div>
+                        <div class="visual-option" data-value="45+">
+                            <div class="icon">🌲</div>
+                            <div class="label">45+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Skin Tone / Complexion</label>
+                <div class="complexion-grid" id="complexion-select">
+                    <div class="complexion-option" data-value="fair" style="background: #FFE4C4;" title="Fair"></div>
+                    <div class="complexion-option" data-value="light" style="background: #F5DEB3;" title="Light"></div>
+                    <div class="complexion-option" data-value="medium" style="background: #DEB887;" title="Medium"></div>
+                    <div class="complexion-option" data-value="olive" style="background: #C4A77D;" title="Olive"></div>
+                    <div class="complexion-option" data-value="tan" style="background: #B8860B;" title="Tan"></div>
+                    <div class="complexion-option" data-value="brown" style="background: #8B6914;" title="Brown"></div>
+                    <div class="complexion-option" data-value="dark" style="background: #654321;" title="Dark"></div>
+                </div>
+            </div>
+            
+            <div class="form-grid" style="margin-top: 1.5rem;">
+                <div class="form-group">
+                    <label>Height</label>
+                    <select id="height-select">
+                        <option value="">Select height...</option>
+                        <option value="petite">Petite (Under 5'3" / 160cm)</option>
+                        <option value="short">Short (5'3" - 5'5" / 160-165cm)</option>
+                        <option value="average">Average (5'5" - 5'8" / 165-173cm)</option>
+                        <option value="tall">Tall (5'8" - 6'0" / 173-183cm)</option>
+                        <option value="very-tall">Very Tall (Over 6'0" / 183cm)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Body Type</label>
+                    <select id="body-select">
+                        <option value="">Select body type...</option>
+                        <option value="slim">Slim / Lean</option>
+                        <option value="athletic">Athletic / Fit</option>
+                        <option value="average">Average</option>
+                        <option value="curvy">Curvy</option>
+                        <option value="plus">Plus Size</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="nextStep(2)">Continue →</button>
+            </div>
+        </section>
+        
+        <!-- Step 2: Preferences -->
+        <section class="form-section" id="step2">
+            <h2>🎯 When, Where & Budget</h2>
+            <p>Tell us about the occasion, conditions, and your budget</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Occasion</label>
+                    <div class="visual-select" id="occasion-select">
+                        <div class="visual-option" data-value="casual">
+                            <div class="icon">☕</div>
+                            <div class="label">Casual</div>
+                        </div>
+                        <div class="visual-option" data-value="work">
+                            <div class="icon">💼</div>
+                            <div class="label">Work</div>
+                        </div>
+                        <div class="visual-option" data-value="date">
+                            <div class="icon">💕</div>
+                            <div class="label">Date Night</div>
+                        </div>
+                        <div class="visual-option" data-value="party">
+                            <div class="icon">🎉</div>
+                            <div class="label">Party</div>
+                        </div>
+                        <div class="visual-option" data-value="formal">
+                            <div class="icon">🎩</div>
+                            <div class="label">Formal</div>
+                        </div>
+                        <div class="visual-option" data-value="outdoor">
+                            <div class="icon">🏕️</div>
+                            <div class="label">Outdoor</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-grid" style="margin-top: 1.5rem;">
+                <div class="form-group">
+                    <label>Weather</label>
+                    <div class="visual-select" id="weather-select">
+                        <div class="visual-option" data-value="hot">
+                            <div class="icon">☀️</div>
+                            <div class="label">Hot</div>
+                        </div>
+                        <div class="visual-option" data-value="warm">
+                            <div class="icon">🌤️</div>
+                            <div class="label">Warm</div>
+                        </div>
+                        <div class="visual-option" data-value="mild">
+                            <div class="icon">⛅</div>
+                            <div class="label">Mild</div>
+                        </div>
+                        <div class="visual-option" data-value="cool">
+                            <div class="icon">🌥️</div>
+                            <div class="label">Cool</div>
+                        </div>
+                        <div class="visual-option" data-value="cold">
+                            <div class="icon">❄️</div>
+                            <div class="label">Cold</div>
+                        </div>
+                        <div class="visual-option" data-value="rainy">
+                            <div class="icon">🌧️</div>
+                            <div class="label">Rainy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Style Preference</label>
+                <div class="visual-select" id="style-select">
+                    <div class="visual-option" data-value="classic">
+                        <div class="icon">👔</div>
+                        <div class="label">Classic</div>
+                    </div>
+                    <div class="visual-option" data-value="trendy">
+                        <div class="icon">✨</div>
+                        <div class="label">Trendy</div>
+                    </div>
+                    <div class="visual-option" data-value="minimalist">
+                        <div class="icon">⬜</div>
+                        <div class="label">Minimal</div>
+                    </div>
+                    <div class="visual-option" data-value="bold">
+                        <div class="icon">🎨</div>
+                        <div class="label">Bold</div>
+                    </div>
+                    <div class="visual-option" data-value="streetwear">
+                        <div class="icon">🛹</div>
+                        <div class="label">Street</div>
+                    </div>
+                    <div class="visual-option" data-value="elegant">
+                        <div class="icon">💎</div>
+                        <div class="label">Elegant</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-grid" style="margin-top: 1.5rem;">
+                <div class="form-group">
+                    <label>💰 Your Budget (per item)</label>
+                    <select id="budget-select">
+                        <option value="">Select your budget...</option>
+                        <option value="budget">Budget-Friendly (Under $50)</option>
+                        <option value="moderate">Moderate ($50 - $100)</option>
+                        <option value="mid-range">Mid-Range ($100 - $200)</option>
+                        <option value="premium">Premium ($200 - $500)</option>
+                        <option value="luxury">Luxury ($500+)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep(1)">← Back</button>
+                <button class="btn btn-primary" onclick="nextStep(3)">Continue →</button>
+            </div>
+        </section>
+        
+        <!-- Step 3: Search -->
+        <section class="form-section" id="step3">
+            <h2>🔍 What Are You Looking For?</h2>
+            <p>Search for a clothing item and we'll build complete outfits around it</p>
+            
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="e.g., blue jeans, white sneakers, leather jacket...">
+                <button class="btn btn-primary" onclick="performSearch()">Search</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Popular searches:</p>
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="quickSearch('blue jeans')" style="padding: 0.5rem 1rem;">👖 Blue Jeans</button>
+                    <button class="btn btn-secondary" onclick="quickSearch('white sneakers')" style="padding: 0.5rem 1rem;">👟 White Sneakers</button>
+                    <button class="btn btn-secondary" onclick="quickSearch('leather jacket')" style="padding: 0.5rem 1rem;">🧥 Leather Jacket</button>
+                    <button class="btn btn-secondary" onclick="quickSearch('black dress')" style="padding: 0.5rem 1rem;">👗 Black Dress</button>
+                    <button class="btn btn-secondary" onclick="quickSearch('blazer')" style="padding: 0.5rem 1rem;">🧥 Blazer</button>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="prevStep(2)">← Back</button>
+            </div>
+        </section>
+        
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <h3>Creating Your Personalized Style Guide</h3>
+            <p style="color: var(--text-muted);">Consulting fashion experts and finding the perfect pieces within your budget...</p>
+        </div>
+        
+        <!-- Results Section -->
+        <section class="results-section" id="results">
+            <!-- Results will be inserted here by JavaScript -->
+        </section>
+        
+        <footer>
+            <p>Made with ❤️ by AI Outfit Stylist | Powered by Expert Fashion Advice</p>
+        </footer>
+    </div>
+    
+    <script>
+        // =====================================================
+        // EXPERT FASHION KNOWLEDGE BASE
+        // Based on advice from Vogue, GQ, Harper's Bazaar, Elle
+        // =====================================================
+        const fashionKnowledge = {
+            // Color Theory by Complexion (from Color Me Beautiful & fashion magazines)
+            colorTheory: {
+                fair: {
+                    bestColors: ['Navy', 'Emerald', 'Ruby Red', 'Sapphire Blue', 'Soft Pink', 'Lavender', 'Cool Gray'],
+                    avoidColors: ['Orange', 'Mustard', 'Olive Green'],
+                    metallic: 'Silver',
+                    tips: 'Jewel tones create stunning contrast. According to Vogue, fair skin looks exceptional in deep blues and emerald greens.'
+                },
+                light: {
+                    bestColors: ['Burgundy', 'Teal', 'Dusty Rose', 'Coral', 'Soft White', 'Periwinkle'],
+                    avoidColors: ['Neon colors', 'Harsh Black'],
+                    metallic: 'Rose Gold',
+                    tips: 'Harper\'s Bazaar recommends soft, muted tones that won\'t overwhelm your delicate coloring.'
+                },
+                medium: {
+                    bestColors: ['Olive', 'Rust', 'Teal', 'Coral', 'Warm White', 'Camel'],
+                    avoidColors: ['Pastels that wash you out'],
+                    metallic: 'Gold or Rose Gold',
+                    tips: 'Elle suggests warm earth tones and rich colors that complement your balanced undertones.'
+                },
+                olive: {
+                    bestColors: ['Burnt Orange', 'Terracotta', 'Olive Green', 'Warm Red', 'Cream', 'Chocolate Brown'],
+                    avoidColors: ['Cool pastels', 'Silver tones'],
+                    metallic: 'Gold',
+                    tips: 'GQ recommends warm, earthy palettes. Olive skin has golden undertones that pair beautifully with autumn colors.'
+                },
+                tan: {
+                    bestColors: ['White', 'Coral', 'Turquoise', 'Bright Yellow', 'Hot Pink', 'Orange'],
+                    avoidColors: ['Muted browns', 'Beige'],
+                    metallic: 'Gold',
+                    tips: 'Bright, vibrant colors pop beautifully against tan skin according to InStyle magazine.'
+                },
+                brown: {
+                    bestColors: ['Royal Blue', 'Emerald', 'Fuchsia', 'Orange', 'Yellow', 'White', 'Bright Red'],
+                    avoidColors: ['Muddy colors', 'Muted tones'],
+                    metallic: 'Gold',
+                    tips: 'Essence magazine notes that bold, saturated colors create stunning contrast with rich skin tones.'
+                },
+                dark: {
+                    bestColors: ['White', 'Cobalt Blue', 'Bright Orange', 'Yellow', 'Hot Pink', 'Emerald', 'Red'],
+                    avoidColors: ['Dark browns', 'Black (unless well-accessorized)'],
+                    metallic: 'Gold',
+                    tips: 'According to Vogue, jewel tones and bright whites create a powerful, stunning look against deep skin tones.'
+                }
+            },
+            
+            // Body Type Styling (from fashion experts)
+            bodyTyping: {
+                slim: {
+                    tips: 'Add visual interest with layers and textures. Horizontal stripes can add width.',
+                    bestStyles: ['Layered looks', 'Textured fabrics', 'Cropped jackets', 'Fitted silhouettes'],
+                    source: 'GQ Style Guide'
+                },
+                athletic: {
+                    tips: 'Embrace your shape with well-fitted clothes. Avoid overly baggy items.',
+                    bestStyles: ['Fitted t-shirts', 'Straight-leg pants', 'Bomber jackets', 'Slim-fit blazers'],
+                    source: 'Men\'s Health Fashion'
+                },
+                average: {
+                    tips: 'You have flexibility! Focus on proper fit and proportions.',
+                    bestStyles: ['Classic cuts', 'Tailored pieces', 'Most styles work well'],
+                    source: 'Esquire Style'
+                },
+                curvy: {
+                    tips: 'Define your waist and embrace your silhouette. Wrap styles are your friend.',
+                    bestStyles: ['Wrap dresses', 'High-waisted bottoms', 'V-necklines', 'A-line skirts'],
+                    source: 'Glamour Magazine'
+                },
+                plus: {
+                    tips: 'Focus on fit over size. Structured pieces and vertical lines elongate.',
+                    bestStyles: ['Structured blazers', 'A-line dresses', 'Dark bottoms', 'V-necks'],
+                    source: 'InStyle Plus Guide'
+                }
+            },
+            
+            // Occasion-Based Expert Tips
+            occasionTips: {
+                casual: {
+                    rules: ['Quality basics over trendy pieces', 'Invest in good denim', 'White sneakers are essential'],
+                    source: 'The Gentlewoman'
+                },
+                work: {
+                    rules: ['Fit is everything in professional attire', 'Navy is the new black', 'Minimalist accessories'],
+                    source: 'Forbes Style Section'
+                },
+                date: {
+                    rules: ['Something that makes you feel confident', 'A touch of texture or shimmer', 'Subtle fragrance'],
+                    source: 'Cosmopolitan'
+                },
+                party: {
+                    rules: ['One statement piece is enough', 'Metallics work after 6pm', 'Comfort for dancing'],
+                    source: 'W Magazine'
+                },
+                formal: {
+                    rules: ['Classic never fails', 'Proper tailoring is non-negotiable', 'Less jewelry, more impact'],
+                    source: 'Town & Country'
+                },
+                outdoor: {
+                    rules: ['Layer for versatility', 'Function meets fashion', 'Weather-appropriate fabrics'],
+                    source: 'Outside Magazine'
+                }
+            },
+            
+            // Current Fashion Trends 2024
+            trends2024: [
+                'Quiet Luxury - understated elegance with quality fabrics',
+                'Cherry Red - the color of the season',
+                'Barrel Leg Jeans - the new silhouette',
+                'Sheer layers - strategic see-through elements',
+                'Butter Yellow - soft, optimistic hues',
+                'Maxi everything - longer lengths return',
+                'Textured leather - croc and snake embossing'
+            ]
+        };
+        
+        // =====================================================
+        // RETAILER LINKS DATABASE
+        // =====================================================
+        const retailerLinks = {
+            // Budget-Friendly (Under $50)
+            budget: {
+                retailers: [
+                    { name: 'H&M', baseUrl: 'https://www2.hm.com/en_us/search-results.html?q=' },
+                    { name: 'SHEIN', baseUrl: 'https://us.shein.com/pdsearch/' },
+                    { name: 'Uniqlo', baseUrl: 'https://www.uniqlo.com/us/en/search?q=' },
+                    { name: 'Target', baseUrl: 'https://www.target.com/s?searchTerm=' },
+                    { name: 'Old Navy', baseUrl: 'https://oldnavy.gap.com/browse/search.do?searchText=' }
+                ],
+                priceRange: { min: 15, max: 50 }
+            },
+            // Moderate ($50-$100)
+            moderate: {
+                retailers: [
+                    { name: 'ASOS', baseUrl: 'https://www.asos.com/us/search/?q=' },
+                    { name: 'Zara', baseUrl: 'https://www.zara.com/us/en/search?searchTerm=' },
+                    { name: 'Mango', baseUrl: 'https://shop.mango.com/us/search?kw=' },
+                    { name: 'COS', baseUrl: 'https://www.cos.com/en_usd/search.html?q=' },
+                    { name: 'Abercrombie', baseUrl: 'https://www.abercrombie.com/shop/us/search?searchTerm=' }
+                ],
+                priceRange: { min: 50, max: 100 }
+            },
+            // Mid-Range ($100-$200)
+            'mid-range': {
+                retailers: [
+                    { name: 'Nordstrom', baseUrl: 'https://www.nordstrom.com/sr?keyword=' },
+                    { name: 'Anthropologie', baseUrl: 'https://www.anthropologie.com/search?q=' },
+                    { name: 'J.Crew', baseUrl: 'https://www.jcrew.com/r/search?N=0&Ntt=' },
+                    { name: 'Banana Republic', baseUrl: 'https://bananarepublic.gap.com/browse/search.do?searchText=' },
+                    { name: 'Reformation', baseUrl: 'https://www.thereformation.com/search?q=' }
+                ],
+                priceRange: { min: 100, max: 200 }
+            },
+            // Premium ($200-$500)
+            premium: {
+                retailers: [
+                    { name: 'Nordstrom', baseUrl: 'https://www.nordstrom.com/sr?keyword=' },
+                    { name: 'Bloomingdale\'s', baseUrl: 'https://www.bloomingdales.com/shop/search?keyword=' },
+                    { name: 'Saks Fifth Ave', baseUrl: 'https://www.saksfifthavenue.com/search?q=' },
+                    { name: 'AllSaints', baseUrl: 'https://www.allsaints.com/search?cgid=search-results&q=' },
+                    { name: 'Theory', baseUrl: 'https://www.theory.com/search?q=' }
+                ],
+                priceRange: { min: 200, max: 500 }
+            },
+            // Luxury ($500+)
+            luxury: {
+                retailers: [
+                    { name: 'Net-a-Porter', baseUrl: 'https://www.net-a-porter.com/en-us/search?query=' },
+                    { name: 'SSENSE', baseUrl: 'https://www.ssense.com/en-us/search?q=' },
+                    { name: 'Farfetch', baseUrl: 'https://www.farfetch.com/shopping/women/search/items.aspx?q=' },
+                    { name: 'Neiman Marcus', baseUrl: 'https://www.neimanmarcus.com/search?Ntt=' },
+                    { name: 'MatchesFashion', baseUrl: 'https://www.matchesfashion.com/us/search?q=' }
+                ],
+                priceRange: { min: 500, max: 5000 }
+            }
+        };
+        
+        // User Profile Data
+        const userProfile = {
+            gender: null,
+            age: null,
+            complexion: null,
+            height: null,
+            bodyType: null,
+            occasion: null,
+            weather: null,
+            style: null,
+            budget: null,
+            searchItem: null
+        };
+        
+        // Initialize visual selectors
+        document.querySelectorAll('.visual-select').forEach(container => {
+            container.querySelectorAll('.visual-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    container.querySelectorAll('.visual-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    const field = container.id.replace('-select', '');
+                    userProfile[field] = option.dataset.value;
+                });
+            });
+        });
+        
+        // Complexion selector
+        document.querySelectorAll('.complexion-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.complexion-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                userProfile.complexion = option.dataset.value;
+            });
+        });
+        
+        // Step navigation
+        function nextStep(step) {
+            // Validate current step
+            if (step === 2) {
+                if (!userProfile.gender) { alert('Please select your gender'); return; }
+                userProfile.height = document.getElementById('height-select').value;
+                userProfile.bodyType = document.getElementById('body-select').value;
+            }
+            if (step === 3) {
+                if (!userProfile.occasion) { alert('Please select an occasion'); return; }
+                if (!userProfile.weather) { alert('Please select weather conditions'); return; }
+                userProfile.budget = document.getElementById('budget-select').value;
+                if (!userProfile.budget) { alert('Please select your budget'); return; }
+            }
+            
+            // Hide all sections
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            
+            // Show target section
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // Update indicators
+            updateStepIndicators(step);
+        }
+        
+        function prevStep(step) {
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+            updateStepIndicators(step);
+        }
+        
+        function updateStepIndicators(currentStep) {
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById(`step${i}-indicator`);
+                indicator.classList.remove('active', 'completed');
+                if (i < currentStep) indicator.classList.add('completed');
+                if (i === currentStep) indicator.classList.add('active');
+            }
+        }
+        
+        function quickSearch(term) {
+            document.getElementById('searchInput').value = term;
+            performSearch();
+        }
+        
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            userProfile.searchItem = query;
+            
+            // Show loading
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('loading').classList.add('active');
+            
+            // Simulate API call with fashion expert analysis
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('active');
+                showResults();
+                updateStepIndicators(4);
+            }, 2500);
+        }
+        
+        function getBudgetLabel() {
+            const labels = {
+                'budget': 'Under $50',
+                'moderate': '$50-$100',
+                'mid-range': '$100-$200',
+                'premium': '$200-$500',
+                'luxury': '$500+'
+            };
+            return labels[userProfile.budget] || 'Any budget';
+        }
+        
+        function getShoppingLinks(productName) {
+            const budget = userProfile.budget || 'moderate';
+            const retailers = retailerLinks[budget]?.retailers || retailerLinks.moderate.retailers;
+            const searchTerm = encodeURIComponent(productName);
+            
+            return retailers.slice(0, 3).map(r => ({
+                name: r.name,
+                url: r.baseUrl + searchTerm
+            }));
+        }
+        
+        function adjustPriceForBudget(basePrice) {
+            const budget = userProfile.budget || 'moderate';
+            const range = retailerLinks[budget]?.priceRange || { min: 50, max: 100 };
+            
+            // Adjust price to fit within budget range
+            const price = Math.floor(Math.random() * (range.max - range.min) + range.min);
+            return '$' + price;
+        }
+        
+        function showResults() {
+            const results = generateRecommendations();
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = `
+                <!-- Profile Summary -->
+                <div class="profile-summary">
+                    <strong style="margin-right: 0.5rem;">Your Style Profile:</strong>
+                    ${userProfile.gender ? `<div class="tag">${getGenderIcon()} ${capitalize(userProfile.gender)}</div>` : ''}
+                    ${userProfile.age ? `<div class="tag">📅 ${userProfile.age}</div>` : ''}
+                    ${userProfile.complexion ? `<div class="tag">🎨 ${capitalize(userProfile.complexion)} tone</div>` : ''}
+                    ${userProfile.height ? `<div class="tag">📏 ${capitalize(userProfile.height)}</div>` : ''}
+                    ${userProfile.bodyType ? `<div class="tag">👤 ${capitalize(userProfile.bodyType)}</div>` : ''}
+                    ${userProfile.occasion ? `<div class="tag">${getOccasionIcon()} ${capitalize(userProfile.occasion)}</div>` : ''}
+                    ${userProfile.weather ? `<div class="tag">${getWeatherIcon()} ${capitalize(userProfile.weather)}</div>` : ''}
+                    ${userProfile.budget ? `<div class="tag">💰 ${getBudgetLabel()}</div>` : ''}
+                    <button class="btn btn-secondary" onclick="startOver()" style="margin-left: auto; padding: 0.5rem 1rem;">Start Over</button>
+                </div>
+                
+                <!-- Expert Color Advice -->
+                ${userProfile.complexion ? `
+                <div class="expert-banner">
+                    <h4>📚 Expert Color Analysis for Your Skin Tone</h4>
+                    <p><strong>Best Colors:</strong> ${fashionKnowledge.colorTheory[userProfile.complexion]?.bestColors.join(', ')}</p>
+                    <p style="margin-top: 0.5rem;"><strong>Expert Tip:</strong> ${fashionKnowledge.colorTheory[userProfile.complexion]?.tips}</p>
+                    <p style="margin-top: 0.5rem;"><strong>Best Metallic:</strong> ${fashionKnowledge.colorTheory[userProfile.complexion]?.metallic} jewelry and accents</p>
+                </div>
+                ` : ''}
+                
+                <!-- Search Results -->
+                <h2 class="section-title">🛍️ ${capitalize(userProfile.searchItem)} - Curated For You <span class="budget-badge">${getBudgetLabel()}</span></h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Products selected by our style experts based on your profile and budget</p>
+                <div class="products-grid">
+                    ${results.products.map(p => `
+                        <div class="product-card">
+                            <img src="${p.img}" alt="${p.name}" loading="lazy">
+                            <div class="product-info">
+                                <div class="product-name">${p.name}</div>
+                                <div class="product-meta">${p.fit}</div>
+                                <div class="product-price">${p.price}</div>
+                                <div class="product-reason">✨ ${p.reason}</div>
+                                <div class="product-links">
+                                    ${p.shopLinks.map(link => `
+                                        <a href="${link.url}" target="_blank" class="shop-link">🛒 ${link.name}</a>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Recommended Pairings -->
+                <h2 class="section-title">🛒 Complete Your Look - Buy These</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Expert-recommended pieces that pair perfectly with ${userProfile.searchItem}, within your ${getBudgetLabel()} budget</p>
+                <div class="products-grid">
+                    ${results.pairings.map(p => `
+                        <div class="product-card">
+                            <img src="${p.img}" alt="${p.name}" loading="lazy">
+                            <div class="product-info">
+                                <div class="product-name">${p.name}</div>
+                                <div class="product-meta">${p.category}</div>
+                                <div class="product-price">${p.price}</div>
+                                <div class="product-reason">✨ ${p.reason}</div>
+                                <div class="product-links">
+                                    ${p.shopLinks.map(link => `
+                                        <a href="${link.url}" target="_blank" class="shop-link">🛒 ${link.name}</a>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Outfit Looks -->
+                <h2 class="section-title">✨ Complete Looks to Aim For</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Styled outfits perfect for ${userProfile.occasion} in ${userProfile.weather} weather</p>
+                <div class="outfits-grid">
+                    ${results.outfits.map(o => `
+                        <div class="outfit-card">
+                            <img src="${o.img}" alt="${o.name}" class="outfit-main-img" loading="lazy">
+                            <div class="outfit-content">
+                                <div class="outfit-name">${o.name}</div>
+                                <div class="outfit-desc">${o.desc}</div>
+                                <div class="outfit-items">
+                                    ${o.items.map(item => `
+                                        <div class="outfit-item">
+                                            <img src="${item.img}" alt="${item.name}" loading="lazy">
+                                            <span>${item.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="outfit-tags">
+                                    ${o.tags.map(t => `<span class="outfit-tag">${t}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Style Tips from Fashion Experts -->
+                <div class="tips-section">
+                    <h3>💡 Expert Style Tips Personalized for You</h3>
+                    <div class="tips-list">
+                        ${results.tips.map(tip => `
+                            <div class="tip-item">
+                                <span class="tip-icon">${tip.icon}</span>
+                                <div>
+                                    <span class="tip-text">${tip.text}</span>
+                                    ${tip.source ? `<div class="tip-source">— ${tip.source}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- 2024 Trends -->
+                <div class="expert-banner" style="margin-top: 1rem;">
+                    <h4>🔥 2024 Fashion Trends to Consider</h4>
+                    <p>${fashionKnowledge.trends2024.slice(0, 3).join(' • ')}</p>
+                </div>
+            `;
+            
+            resultsDiv.classList.add('active');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function generateRecommendations() {
+            const data = getDataForSearch(userProfile.searchItem);
+            
+            // Customize based on profile with budget filtering
+            const products = customizeProducts(data.products);
+            const pairings = generatePairings();
+            const outfits = customizeOutfits(data.outfits);
+            const tips = generateExpertTips();
+            
+            return { products, pairings, outfits, tips };
+        }
+        
+        function customizeProducts(products) {
+            return products.map(p => ({
+                ...p,
+                price: adjustPriceForBudget(p.price),
+                fit: getFitRecommendation(),
+                reason: getProductReason(p),
+                shopLinks: getShoppingLinks(p.name)
+            }));
+        }
+        
+        function getFitRecommendation() {
+            const bodyType = userProfile.bodyType;
+            const height = userProfile.height;
+            
+            // Use fashion knowledge for body type recommendations
+            if (bodyType && fashionKnowledge.bodyTyping[bodyType]) {
+                const styleInfo = fashionKnowledge.bodyTyping[bodyType];
+                return styleInfo.bestStyles[0] + ' Recommended';
+            }
+            
+            if (bodyType === 'slim') return 'Slim Fit Recommended';
+            if (bodyType === 'athletic') return 'Regular Fit';
+            if (bodyType === 'curvy') return 'Curve-Friendly Fit';
+            if (bodyType === 'plus') return 'Relaxed Fit';
+            if (height === 'petite') return 'Petite Sizing Available';
+            if (height === 'tall' || height === 'very-tall') return 'Tall Sizing Available';
+            return 'Regular Fit';
+        }
+        
+        function getProductReason(product) {
+            const reasons = [];
+            
+            // Use color theory from fashion knowledge
+            if (userProfile.complexion && fashionKnowledge.colorTheory[userProfile.complexion]) {
+                const colorInfo = fashionKnowledge.colorTheory[userProfile.complexion];
+                reasons.push(`Pairs well with ${colorInfo.bestColors[0]} - perfect for your ${userProfile.complexion} skin tone`);
+            } else if (userProfile.complexion === 'fair' || userProfile.complexion === 'light') {
+                reasons.push('Great contrast with your light skin tone');
+            } else if (userProfile.complexion === 'dark' || userProfile.complexion === 'brown') {
+                reasons.push('Beautiful complement to your rich skin tone');
+            } else {
+                reasons.push('Versatile shade for your complexion');
+            }
+            
+            // Add occasion-specific reasons
+            if (userProfile.occasion === 'work') reasons.push('Office appropriate per Forbes Style Guide');
+            if (userProfile.occasion === 'date') reasons.push('Cosmopolitan-approved date look');
+            if (userProfile.occasion === 'casual') reasons.push('Effortlessly casual');
+            if (userProfile.occasion === 'formal') reasons.push('Town & Country formal approved');
+            
+            return reasons[0] || 'Perfect for your style';
+        }
+        
+        function generatePairings() {
+            const searchItem = userProfile.searchItem.toLowerCase();
+            
+            // Base pairings by search category with budget-adjusted prices
+            let pairings = [];
+            
+            if (searchItem.includes('jean') || searchItem.includes('denim')) {
+                pairings = [
+                    { name: 'White Oxford Shirt', category: 'Top', img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=500&fit=crop' },
+                    { name: 'Leather Belt', category: 'Accessory', img: 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=400&h=500&fit=crop' },
+                    { name: 'Classic Sneakers', category: 'Shoes', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop' },
+                    { name: 'Casual Watch', category: 'Accessory', img: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=500&fit=crop' },
+                ];
+            } else if (searchItem.includes('sneaker') || searchItem.includes('shoe')) {
+                pairings = [
+                    { name: 'Slim Fit Chinos', category: 'Bottom', img: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400&h=500&fit=crop' },
+                    { name: 'Crew Neck Sweater', category: 'Top', img: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&h=500&fit=crop' },
+                    { name: 'Canvas Backpack', category: 'Accessory', img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop' },
+                    { name: 'Sunglasses', category: 'Accessory', img: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=500&fit=crop' },
+                ];
+            } else if (searchItem.includes('jacket') || searchItem.includes('leather')) {
+                pairings = [
+                    { name: 'Black Skinny Jeans', category: 'Bottom', img: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=400&h=500&fit=crop' },
+                    { name: 'Graphic T-Shirt', category: 'Top', img: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&h=500&fit=crop' },
+                    { name: 'Chelsea Boots', category: 'Shoes', img: 'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=400&h=500&fit=crop' },
+                    { name: 'Silver Chain', category: 'Accessory', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=500&fit=crop' },
+                ];
+            } else if (searchItem.includes('dress')) {
+                pairings = [
+                    { name: 'Strappy Heels', category: 'Shoes', img: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&h=500&fit=crop' },
+                    { name: 'Statement Earrings', category: 'Accessory', img: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&h=500&fit=crop' },
+                    { name: 'Clutch Bag', category: 'Accessory', img: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop' },
+                    { name: 'Cardigan', category: 'Layer', img: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&h=500&fit=crop' },
+                ];
+            } else {
+                pairings = [
+                    { name: 'Classic White Tee', category: 'Top', img: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop' },
+                    { name: 'Versatile Sneakers', category: 'Shoes', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop' },
+                    { name: 'Minimal Watch', category: 'Accessory', img: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=500&fit=crop' },
+                    { name: 'Leather Bag', category: 'Accessory', img: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=500&fit=crop' },
+                ];
+            }
+            
+            // Add budget-adjusted prices and shopping links
+            return pairings.map(p => ({
+                ...p,
+                price: adjustPriceForBudget(50),
+                reason: getPairingReason(p),
+                shopLinks: getShoppingLinks(p.name)
+            }));
+        }
+        
+        function getPairingReason(pairing) {
+            // Use occasion tips from fashion knowledge
+            const occasionInfo = fashionKnowledge.occasionTips[userProfile.occasion];
+            if (occasionInfo) {
+                return `${occasionInfo.rules[0]} — ${occasionInfo.source}`;
+            }
+            
+            const reasons = {
+                'casual': 'Perfect for your casual day',
+                'work': 'Office-ready pairing',
+                'date': 'Date night essential',
+                'party': 'Party-perfect piece',
+                'formal': 'Elegant addition',
+                'outdoor': 'Great for outdoor activities'
+            };
+            
+            const weatherReasons = {
+                'hot': 'Breathable for warm weather',
+                'cold': 'Keeps you warm',
+                'rainy': 'Weather-appropriate choice'
+            };
+            
+            return reasons[userProfile.occasion] || weatherReasons[userProfile.weather] || 'Stylish complement';
+        }
+        
+        function customizeOutfits(outfits) {
+            return outfits.map(o => ({
+                ...o,
+                tags: [
+                    capitalize(userProfile.occasion),
+                    capitalize(userProfile.weather) + ' Weather',
+                    capitalize(userProfile.style || 'classic') + ' Style',
+                    userProfile.gender === 'female' ? 'Feminine' : userProfile.gender === 'male' ? 'Masculine' : 'Unisex',
+                    getBudgetLabel()
+                ]
+            }));
+        }
+        
+        function generateExpertTips() {
+            const tips = [];
+            
+            // Complexion tips from fashion knowledge
+            if (userProfile.complexion && fashionKnowledge.colorTheory[userProfile.complexion]) {
+                const colorInfo = fashionKnowledge.colorTheory[userProfile.complexion];
+                tips.push({ 
+                    icon: '🎨', 
+                    text: `Your best colors: ${colorInfo.bestColors.slice(0, 4).join(', ')}. ${colorInfo.tips}`,
+                    source: 'Color Analysis Expert'
+                });
+                tips.push({
+                    icon: '💍',
+                    text: `Choose ${colorInfo.metallic} jewelry and accessories for the most flattering look.`,
+                    source: 'Vogue Accessories Guide'
+                });
+            }
+            
+            // Body type tips from fashion knowledge
+            if (userProfile.bodyType && fashionKnowledge.bodyTyping[userProfile.bodyType]) {
+                const bodyInfo = fashionKnowledge.bodyTyping[userProfile.bodyType];
+                tips.push({ 
+                    icon: '👗', 
+                    text: bodyInfo.tips,
+                    source: bodyInfo.source
+                });
+            }
+            
+            // Height tips
+            if (userProfile.height === 'petite') {
+                tips.push({ 
+                    icon: '📏', 
+                    text: 'Vertical lines and monochromatic outfits will elongate your frame. High-waisted bottoms are your best friend.',
+                    source: 'InStyle Petite Guide'
+                });
+            } else if (userProfile.height === 'tall' || userProfile.height === 'very-tall') {
+                tips.push({ 
+                    icon: '📏', 
+                    text: 'You can pull off oversized pieces, bold patterns, and maxi lengths with ease.',
+                    source: 'Elle Tall Fashion'
+                });
+            }
+            
+            // Occasion tips from fashion knowledge
+            if (userProfile.occasion && fashionKnowledge.occasionTips[userProfile.occasion]) {
+                const occasionInfo = fashionKnowledge.occasionTips[userProfile.occasion];
+                tips.push({
+                    icon: getOccasionIcon(),
+                    text: occasionInfo.rules.join('. ') + '.',
+                    source: occasionInfo.source
+                });
+            }
+            
+            // Weather tips
+            if (userProfile.weather === 'cold') {
+                tips.push({ 
+                    icon: '❄️', 
+                    text: 'Layer smartly with a quality base layer. Cashmere and merino wool provide warmth without bulk.',
+                    source: 'GQ Winter Style'
+                });
+            } else if (userProfile.weather === 'hot') {
+                tips.push({ 
+                    icon: '☀️', 
+                    text: 'Choose breathable fabrics like linen, cotton, and modal. Light colors reflect heat better.',
+                    source: 'Esquire Summer Guide'
+                });
+            }
+            
+            // Age-specific tips
+            if (userProfile.age === '18-24') {
+                tips.push({
+                    icon: '✨',
+                    text: 'Don\'t be afraid to experiment with trends. This is the time to discover your personal style.',
+                    source: 'Teen Vogue'
+                });
+            } else if (userProfile.age === '35-44' || userProfile.age === '45+') {
+                tips.push({
+                    icon: '💎',
+                    text: 'Invest in quality over quantity. Classic pieces with excellent tailoring never go out of style.',
+                    source: 'Harper\'s Bazaar'
+                });
+            }
+            
+            // Budget tips
+            if (userProfile.budget === 'budget') {
+                tips.push({
+                    icon: '💰',
+                    text: 'Focus spending on versatile basics that can be styled multiple ways. Accessories can elevate any outfit.',
+                    source: 'Refinery29 Budget Style'
+                });
+            } else if (userProfile.budget === 'luxury') {
+                tips.push({
+                    icon: '👑',
+                    text: 'Invest in timeless pieces from heritage brands. Quality craftsmanship ensures longevity.',
+                    source: 'Town & Country'
+                });
+            }
+            
+            // General confidence tip
+            tips.push({ 
+                icon: '✨', 
+                text: 'The most important fashion rule: wear what makes you feel confident and authentic.',
+                source: 'Every Fashion Magazine Ever'
+            });
+            
+            return tips;
+        }
+        
+        // Data store with budget-aware products
+        function getDataForSearch(query) {
+            const q = query.toLowerCase();
+            
+            const allData = {
+                'jeans': {
+                    products: [
+                        { name: 'Classic Slim Fit Blue Jeans', img: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop' },
+                        { name: 'High-Waisted Straight Leg', img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&h=500&fit=crop' },
+                        { name: 'Relaxed Boyfriend Jeans', img: 'https://images.unsplash.com/photo-1475178626620-a4d074967452?w=400&h=500&fit=crop' },
+                        { name: 'Stretch Skinny Jeans', img: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=400&h=500&fit=crop' },
+                    ],
+                    outfits: [
+                        {
+                            name: 'Effortless Weekend',
+                            desc: 'A relaxed yet put-together look perfect for your profile',
+                            img: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'White Tee', img: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=250&fit=crop' },
+                                { name: 'Blue Jeans', img: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=250&fit=crop' },
+                                { name: 'Sneakers', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop' },
+                                { name: 'Denim Jacket', img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200&h=250&fit=crop' }
+                            ]
+                        },
+                        {
+                            name: 'Polished Smart Casual',
+                            desc: 'Elevated denim styling that works for multiple occasions',
+                            img: 'https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Oxford Shirt', img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&h=250&fit=crop' },
+                                { name: 'Dark Jeans', img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=200&h=250&fit=crop' },
+                                { name: 'Loafers', img: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=200&h=250&fit=crop' },
+                                { name: 'Blazer', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop' }
+                            ]
+                        }
+                    ]
+                },
+                'sneakers': {
+                    products: [
+                        { name: 'Classic White Leather Sneakers', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop' },
+                        { name: 'Minimalist Canvas Sneakers', img: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=400&h=500&fit=crop' },
+                        { name: 'Platform Sneakers', img: 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=400&h=500&fit=crop' },
+                        { name: 'Retro Trainers', img: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&h=500&fit=crop' },
+                    ],
+                    outfits: [
+                        {
+                            name: 'Athleisure Perfection',
+                            desc: 'Sporty-chic style that works for your lifestyle',
+                            img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Hoodie', img: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200&h=250&fit=crop' },
+                                { name: 'Joggers', img: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=200&h=250&fit=crop' },
+                                { name: 'Sneakers', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop' },
+                                { name: 'Cap', img: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&h=250&fit=crop' }
+                            ]
+                        },
+                        {
+                            name: 'Clean Minimalist',
+                            desc: 'Understated elegance with modern sneakers as the foundation',
+                            img: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Turtleneck', img: 'https://images.unsplash.com/photo-1608234808654-2a8875faa7fd?w=200&h=250&fit=crop' },
+                                { name: 'Trousers', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=250&fit=crop' },
+                                { name: 'Sneakers', img: 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=200&h=250&fit=crop' },
+                                { name: 'Coat', img: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=200&h=250&fit=crop' }
+                            ]
+                        }
+                    ]
+                },
+                'jacket': {
+                    products: [
+                        { name: 'Classic Black Biker Jacket', img: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=500&fit=crop' },
+                        { name: 'Vintage Brown Leather', img: 'https://images.unsplash.com/photo-1520975954732-35dd22299614?w=400&h=500&fit=crop' },
+                        { name: 'Moto Style Jacket', img: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=400&h=500&fit=crop' },
+                        { name: 'Cropped Leather Jacket', img: 'https://images.unsplash.com/photo-1559551409-dadc959f76b8?w=400&h=500&fit=crop' },
+                    ],
+                    outfits: [
+                        {
+                            name: 'Rock Edge',
+                            desc: 'Channel effortless cool with leather as your statement piece',
+                            img: 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Band Tee', img: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=200&h=250&fit=crop' },
+                                { name: 'Black Jeans', img: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?w=200&h=250&fit=crop' },
+                                { name: 'Boots', img: 'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=200&h=250&fit=crop' },
+                                { name: 'Leather Jacket', img: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&h=250&fit=crop' }
+                            ]
+                        },
+                        {
+                            name: 'Sophisticated Edge',
+                            desc: 'Polished meets edgy for a modern look',
+                            img: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'White Shirt', img: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=250&fit=crop' },
+                                { name: 'Jeans', img: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=250&fit=crop' },
+                                { name: 'Sneakers', img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=250&fit=crop' },
+                                { name: 'Brown Jacket', img: 'https://images.unsplash.com/photo-1520975954732-35dd22299614?w=200&h=250&fit=crop' }
+                            ]
+                        }
+                    ]
+                },
+                'dress': {
+                    products: [
+                        { name: 'Little Black Dress', img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=500&fit=crop' },
+                        { name: 'Elegant Midi Dress', img: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&h=500&fit=crop' },
+                        { name: 'Flowing Maxi Dress', img: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&h=500&fit=crop' },
+                        { name: 'Cocktail Dress', img: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400&h=500&fit=crop' },
+                    ],
+                    outfits: [
+                        {
+                            name: 'Evening Elegance',
+                            desc: 'Sophisticated style for special occasions',
+                            img: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Black Dress', img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200&h=250&fit=crop' },
+                                { name: 'Heels', img: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&h=250&fit=crop' },
+                                { name: 'Clutch', img: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&h=250&fit=crop' },
+                                { name: 'Earrings', img: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=200&h=250&fit=crop' }
+                            ]
+                        },
+                        {
+                            name: 'Casual Chic',
+                            desc: 'Dress it down for everyday elegance',
+                            img: 'https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?w=600&h=800&fit=crop',
+                            items: [
+                                { name: 'Midi Dress', img: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=200&h=250&fit=crop' },
+                                { name: 'Sneakers', img: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=200&h=250&fit=crop' },
+                                { name: 'Denim Jacket', img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=200&h=250&fit=crop' },
+                                { name: 'Crossbody', img: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=200&h=250&fit=crop' }
+                            ]
+                        }
+                    ]
+                }
+            };
+            
+            // Match query to data
+            if (q.includes('jean') || q.includes('denim')) return allData.jeans;
+            if (q.includes('sneaker') || q.includes('shoe') || q.includes('trainer')) return allData.sneakers;
+            if (q.includes('jacket') || q.includes('leather') || q.includes('blazer')) return allData.jacket;
+            if (q.includes('dress') || q.includes('gown')) return allData.dress;
+            
+            return allData.jeans; // Default
+        }
+        
+        // Helper functions
+        function capitalize(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        function getGenderIcon() {
+            const icons = { 'male': '👨', 'female': '👩', 'non-binary': '🧑' };
+            return icons[userProfile.gender] || '👤';
+        }
+        
+        function getOccasionIcon() {
+            const icons = { 'casual': '☕', 'work': '💼', 'date': '💕', 'party': '🎉', 'formal': '🎩', 'outdoor': '🏕️' };
+            return icons[userProfile.occasion] || '📍';
+        }
+        
+        function getWeatherIcon() {
+            const icons = { 'hot': '☀️', 'warm': '🌤️', 'mild': '⛅', 'cool': '🌥️', 'cold': '❄️', 'rainy': '🌧️' };
+            return icons[userProfile.weather] || '🌡️';
+        }
+        
+        function startOver() {
+            // Reset profile
+            Object.keys(userProfile).forEach(key => userProfile[key] = null);
+            
+            // Reset UI
+            document.querySelectorAll('.visual-option').forEach(o => o.classList.remove('selected'));
+            document.querySelectorAll('.complexion-option').forEach(o => o.classList.remove('selected'));
+            document.getElementById('height-select').value = '';
+            document.getElementById('body-select').value = '';
+            document.getElementById('budget-select').value = '';
+            document.getElementById('searchInput').value = '';
+            
+            // Show step 1
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            updateStepIndicators(1);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Enter key for search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') performSearch();
+        });
+    </script>
+</body>
+</html>
